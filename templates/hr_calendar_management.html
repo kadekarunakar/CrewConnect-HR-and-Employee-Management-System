@@ -1,0 +1,228 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.css"
+      rel="stylesheet">
+
+<style>
+    .calendar-page {
+        padding: 24px;
+        background: #f5f7fb;
+        min-height: 100vh;
+    }
+
+    .calendar-heading {
+        margin-bottom: 22px;
+    }
+
+    .calendar-heading h2 {
+        color: #153568;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .calendar-heading p {
+        color: #64748b;
+        margin: 0;
+    }
+
+    .calendar-panel {
+        background: #ffffff;
+        padding: 22px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    }
+
+    .calendar-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        margin-bottom: 22px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: #475569;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    #calendar {
+        max-width: 100%;
+    }
+
+    .fc .fc-button {
+        background: #2563eb;
+        border-color: #2563eb;
+        text-transform: capitalize;
+    }
+
+    .fc .fc-button:hover,
+    .fc .fc-button:active {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+
+    .fc .fc-button-primary:disabled {
+        background: #93b4f8;
+        border-color: #93b4f8;
+    }
+
+    .fc .fc-toolbar-title {
+        color: #153568;
+        font-size: 21px;
+        font-weight: 700;
+    }
+
+    .fc-event {
+        cursor: pointer;
+        padding: 2px;
+        border-radius: 4px;
+    }
+
+    @media (max-width: 768px) {
+        .calendar-page {
+            padding: 12px;
+        }
+
+        .calendar-panel {
+            padding: 10px;
+        }
+
+        .fc .fc-toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .fc .fc-toolbar-title {
+            font-size: 18px;
+        }
+    }
+</style>
+
+<div class="calendar-page">
+    <div class="calendar-heading">
+        <h2>Calendar Management</h2>
+        <p>View employee leave schedules and company holidays in one calendar.</p>
+    </div>
+
+    <div class="calendar-panel">
+        <div class="calendar-legend">
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#16a34a"></span>
+                Approved Leave
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#f59e0b"></span>
+                Pending Leave
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#ef4444"></span>
+                Rejected Leave
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#2563eb"></span>
+                National Holiday
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#9333ea"></span>
+                Festival
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#059669"></span>
+                Company Holiday
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#d97706"></span>
+                Restricted Holiday
+            </div>
+        </div>
+
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const calendarElement = document.getElementById("calendar");
+
+    const calendar = new FullCalendar.Calendar(calendarElement, {
+        initialView: "dayGridMonth",
+
+        headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "dayGridMonth,timeGridWeek,listMonth"
+        },
+
+        height: "auto",
+        navLinks: true,
+        dayMaxEvents: true,
+        nowIndicator: true,
+
+        // Both event endpoints appear in this ONE calendar.
+        eventSources: [
+            {
+                url: "{% url 'leave_calendar_events' %}",
+                method: "GET",
+                failure: function () {
+                    alert("Unable to load leave events. Please check the leave endpoint.");
+                }
+            },
+            {
+                url: "{% url 'employee_holiday_events' %}",
+                method: "GET",
+                failure: function () {
+                    alert("Unable to load holidays. Please check the holiday endpoint.");
+                }
+            }
+        ],
+
+        eventClick: function (info) {
+            const props = info.event.extendedProps;
+            let details = info.event.title;
+
+            if (props.event_type === "Leave") {
+                details += "\nStatus: " + (props.status || "Unknown");
+            }
+
+            if (props.event_type === "Holiday") {
+                details += "\nType: " + (props.holiday_type || "Holiday");
+
+                if (props.description) {
+                    details += "\nDescription: " + props.description;
+                }
+
+                if (props.applicable_state) {
+                    details += "\nApplicable state: " + props.applicable_state;
+                }
+            }
+
+            alert(details);
+        }
+    });
+
+    calendar.render();
+});
+</script>
+{% endblock %}
